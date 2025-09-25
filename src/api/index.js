@@ -12,8 +12,9 @@ export const listModels = (section) => axios.get(`${API_BASE_URL}/list_models?se
 export const uploadDataset = (formData) => axios.post(`${API_BASE_URL}/upload_dataset`, formData, {
   headers: { 'Content-Type': 'multipart/form-data' }
 });
-export const startTraining = (data) => axios.post(`${API_BASE_URL}/start_training`, data);
-export const stopTraining = () => axios.post(`${API_BASE_URL}/stop_training`);
+export const startAsrTrain = (data) => axios.post(`${API_BASE_URL}/start_training`, data);
+export const stopAsrTrain = () => axios.post(`${API_BASE_URL}/stop_training`);
+export const getStreamLogs = () => `${API_BASE_URL}/stream_logs`;
 export const listVoiceModels = () => axios.get(`${API_BASE_URL}/list_voice_models`);
 export const uploadCloneAudio = (formData) => axios.post(`${API_BASE_URL}/upload_clone_audio`, formData, {
   headers: { 'Content-Type': 'multipart/form-data' }
