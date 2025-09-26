@@ -76,7 +76,6 @@ const errorMessage = ref('');
 const isSynthesizing = ref(false);
 const socket = getCurrentInstance().appContext.config.globalProperties.$socket;
 
-// 获取 TTS 模型列表
 const fetchModels = async () => {
   try {
     const response = await listModels('tts');
@@ -89,7 +88,6 @@ const fetchModels = async () => {
   }
 };
 
-// 开始语音合成
 const startTTS = () => {
   if (!selectedModel.value || !text.value) {
     ElMessage.error('缺少模型或文本');
@@ -104,20 +102,40 @@ const startTTS = () => {
   });
 };
 
-// 停止语音合成
 const stopTTS = () => {
   socket.emit('stop_tts');
   isSynthesizing.value = false;
   synthesisStatus.value = '语音合成已停止';
 };
 
-// 监听 WebSocket 事件
 socket.on('tts_result', (data) => {
+  console.log('收到 tts_result:', data);
   if (data.text) {
     synthesisStatus.value = data.text;
-    if (data.audio) {
+    if (data.audio && data.text.includes('音频已保存到')) {
       audioUrl.value = `http://localhost:5000/audio/${data.audio}`;
-      ElMessage.success('语音合成完成');
+      // 验证音频文件是否可访问
+      fetch(audioUrl.value)
+        .then(response => {
+          if (response.ok) {
+            ElMessage.success('语音合成完成');
+            isSynthesizing.value = false;
+            // 自动播放音频
+            const audio = new Audio(audioUrl.value);
+            audio.play().catch(err => {
+              console.error('音频播放失败:', err);
+              ElMessage.error('音频播放失败: ' + err.message);
+            });
+          } else {
+            ElMessage.error('无法访问音频文件');
+            isSynthesizing.value = false;
+          }
+        })
+        .catch(err => {
+          console.error('音频请求失败:', err);
+          ElMessage.error('音频请求失败: ' + err.message);
+          isSynthesizing.value = false;
+        });
     }
   } else if (data.error) {
     errorMessage.value = data.error;
@@ -126,7 +144,6 @@ socket.on('tts_result', (data) => {
   }
 });
 
-// 组件生命周期
 onMounted(() => {
   fetchModels();
 });
@@ -137,19 +154,3 @@ onUnmounted(() => {
   }
 });
 </script>
-
-<style scoped>
-.el-row {
-  margin-bottom: 20px;
-}
-.el-divider {
-  margin: 20px 0;
-}
-.el-input-number, .el-select {
-  margin-right: 10px;
-  margin-bottom: 10px;
-}
-audio {
-  margin-top: 10px;
-}
-</style>
