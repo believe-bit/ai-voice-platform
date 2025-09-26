@@ -26,11 +26,7 @@
             <el-input v-model="synthText" placeholder="请输入要合成的文本" :disabled="isCloning"></el-input>
           </el-form-item>
           <el-form-item label="语言提示">
-            <el-select v-model="langTip" placeholder="选择语言" :disabled="isCloning">
-              <el-option label="中文" value="zh"></el-option>
-              <el-option label="英文" value="en"></el-option>
-              <!-- 添加更多语言根据需要 -->
-            </el-select>
+            <el-input v-model="langTip" placeholder="例如：使用粤语说这句话" :disabled="isCloning"></el-input>
           </el-form-item>
           <el-form-item>
             <el-button type="primary" :disabled="!selectedModel || !audioPath || !synthText || isCloning" @click="startClone">开始克隆</el-button>
@@ -64,7 +60,7 @@ const models = ref([]);
 const selectedModel = ref('');
 const audioPath = ref('');
 const synthText = ref('');
-const langTip = ref('zh');
+const langTip = ref('');
 const audioUrl = ref('');
 const cloneStatus = ref('');
 const errorMessage = ref('');

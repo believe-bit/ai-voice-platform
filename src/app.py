@@ -5,7 +5,7 @@ import subprocess
 import logging
 import zipfile
 import shutil
-from flask import Flask, render_template, request, jsonify, send_from_directory, Response
+from flask import Flask, render_template, request, jsonify, send_from_directory, Response, send_file
 from flask_socketio import SocketIO, emit
 from flask_cors import CORS  # 导入 flask_cors
 import numpy as np
@@ -41,6 +41,7 @@ if not os.path.exists(SAVE_AUDIO_ROOT):
     os.makedirs(SAVE_AUDIO_ROOT)
 if not os.path.exists(SAVE_TTS_TRAIN_ROOT):
     os.makedirs(SAVE_TTS_TRAIN_ROOT)
+    
 
 app = Flask(__name__, template_folder='templates')
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -195,11 +196,11 @@ def upload_dataset():
 def serve_audio(filename):
     audio_path = os.path.join(SAVE_AUDIO_ROOT, filename)
     print(f"请求音频文件: {audio_path}", file=sys.stderr)
-    if os.path.exists(audio_path):
-        print(f"找到音频文件: {audio_path}, 返回文件", file=sys.stderr)
-        return send_file(audio_path, mimetype='audio/wav')
-    print(f"音频文件不存在: {audio_path}", file=sys.stderr)
-    return jsonify({"error": "音频文件不存在"}), 404
+    if not os.path.exists(audio_path):
+        print(f"音频文件不存在: {audio_path}", file=sys.stderr)
+        return {"error": f"音频文件不存在: {audio_path}"}, 404
+    print(f"找到音频文件: {audio_path}, 返回文件", file=sys.stderr)
+    return send_file(audio_path, mimetype='audio/wav')
 
 # API：上传复刻音色音频
 @app.route('/upload_voice_clone_audio', methods=['POST'])
@@ -738,19 +739,27 @@ def read_recognition_output():
 # 异步读取语音合成输出
 def read_tts_output(output_filename):
     global tts_process
+    # 忽略的非错误消息关键词
+    ignore_messages = [
+        "modelscope - INFO",
+        "modelscope - WARNING",
+        "FutureWarning",
+        "torch.load",
+        "weight_norm",
+        "WeightNorm.apply"  # 添加 WeightNorm.apply
+    ]
     while tts_process and tts_process.poll() is None:
         try:
             output = tts_process.stdout.readline().strip()
             error = tts_process.stderr.readline().strip()
-            if output and "音频已保存到" in output:
-                emit('clone_result', {'text': '语音克隆完成', 'audio_path': output_filename})
-                print(f'语音克隆完成: {output_filename}', file=sys.stderr)
-                break
+            if output:
                 print(f'语音合成输出: {output}', file=sys.stderr)
                 socketio.emit('tts_result', {'text': output, 'audio': output_filename})
-            if error:
-                print(f'{error}', file=sys.stderr)
+            if error and not any(msg in error for msg in ignore_messages):
+                print(f'语音合成错误: {error}', file=sys.stderr)
                 socketio.emit('tts_result', {'error': error})
+            elif error:
+                print(f'语音合成调试信息: {error}', file=sys.stderr)  # 仅记录调试信息
         except Exception as e:
             error_msg = f'读取语音合成输出失败：{str(e)}'
             print(error_msg, file=sys.stderr)
@@ -759,21 +768,29 @@ def read_tts_output(output_filename):
 
     try:
         stdout, stderr = tts_process.communicate(timeout=2)
+        return_code = tts_process.returncode
+        print(f'语音合成子进程结束，退出码: {return_code}', file=sys.stderr)
         stdout_lines = [line.strip() for line in stdout.splitlines() if line.strip()]
-        error_lines = [line.strip() for line in stderr.splitlines() if line.strip()]
+        stderr_lines = [line.strip() for line in stderr.splitlines() if line.strip()]
         for line in stdout_lines:
-            if "音频已保存到" in line:
-                print(f'语音合成最终输出: {line}', file=sys.stderr)
-                socketio.emit('tts_result', {'text': line, 'audio': output_filename})
-        for line in error_lines:
-            print(f'{line}', file=sys.stderr)
-            socketio.emit('tts_result', {'error': line})
+            print(f'语音合成最终输出: {line}', file=sys.stderr)
+            socketio.emit('tts_result', {'text': line, 'audio': output_filename})
+        for line in stderr_lines:
+            if not any(msg in line for msg in ignore_messages):
+                print(f'语音合成最终错误: {line}', file=sys.stderr)
+                socketio.emit('tts_result', {'error': line})
+            else:
+                print(f'语音合成最终调试信息: {line}', file=sys.stderr)
+        if return_code != 0:
+            error_msg = f'语音合成子进程失败，退出码: {return_code}'
+            print(error_msg, file=sys.stderr)
+            socketio.emit('tts_result', {'error': error_msg})
     except Exception as e:
         error_msg = f'读取语音合成最终输出失败：{str(e)}'
         print(error_msg, file=sys.stderr)
         socketio.emit('tts_result', {'error': error_msg})
-
-threading.Thread(target=start_ws_server, daemon=True).start()
+    finally:
+        tts_process = None
 
 @app.route('/list_voice_models', methods=['GET'])
 def list_voice_models():

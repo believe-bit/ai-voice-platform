@@ -22,11 +22,17 @@
               <el-form-item label="模型名称">
                 <el-input v-model="modelName" placeholder="输入模型名称" :disabled="isTraining"></el-input>
               </el-form-item>
-              <el-form-item label="训练参数">
+              <el-form-item label="训练轮次">
                 <el-input-number v-model="trainingParams.epochs" label="Epochs" :min="1" :disabled="isTraining"></el-input-number>
+                </el-form-item>
+              <el-form-item label="训练批次">
                 <el-input-number v-model="trainingParams.batch_size" label="Batch Size" :min="1" :disabled="isTraining"></el-input-number>
+              </el-form-item>
+              <el-form-item label="学习率">
                 <el-input v-model="trainingParams.lr" placeholder="Learning Rate (e.g., 1e-5)" :disabled="isTraining"></el-input>
-                <el-switch v-model="trainingParams.use_gpu" active-text="使用 GPU" :disabled="isTraining"></el-switch>
+              </el-form-item>
+              <el-form-item label="使用 GPU">
+                <el-switch v-model="trainingParams.use_gpu" active-text="" :disabled="isTraining"></el-switch>
               </el-form-item>
               <el-form-item>
                 <el-button type="primary" :disabled="!datasetPath || !modelName || isTraining" @click="startTrain">开始训练</el-button>
@@ -61,8 +67,10 @@
               <el-form-item label="输入文本">
                 <el-input v-model="testText" placeholder="请输入要测试的文本" :disabled="isTesting"></el-input>
               </el-form-item>
-              <el-form-item label="测试参数">
+              <el-form-item label="语速">
                 <el-input-number v-model="testParams.speech_rate" label="语速" :min="0.5" :max="2.0" :step="0.1" :disabled="isTesting"></el-input-number>
+              </el-form-item>
+              <el-form-item label="音量">
                 <el-input-number v-model="testParams.volume" label="音量" :min="0.5" :max="2.0" :step="0.1" :disabled="isTesting"></el-input-number>
               </el-form-item>
               <el-form-item>
@@ -83,6 +91,7 @@
               placeholder="测试日志将实时显示在这里"
               readonly
             ></el-input>
+            <!-- <p v-if="audioUrl">音频保存路径：{{ audioUrl.replace('http://localhost:5000/audio/', '/home/believe/ai-voice-platform/audio/') }}</p> -->
           </el-col>
         </el-row>
       </el-tab-pane>
@@ -266,7 +275,9 @@ const startTest = async () => {
     const response = await vitsTest(data);
     console.log('测试响应：', response.data);
     testStatus.value = '测试完成';
+    console.log('后端返回的数据:', response.data);
     audioUrl.value = `http://localhost:5000/audio/${response.data.audio_path}`;
+    console.log('生成的音频 URL:', audioUrl.value);
     ElMessage.success('测试已完成');
     startTestLogStream();
   } catch (error) {
