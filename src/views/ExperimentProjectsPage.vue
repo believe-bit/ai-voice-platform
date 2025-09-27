@@ -37,7 +37,7 @@ import { ref, computed } from 'vue';
 const SpeechCollection = {
   template: `
     <div style="padding: 20px;">
-      <h3>语音采集实验</h3>
+      <h3></h3>
       <button @click="startRecording" style="margin-right: 10px;">开始录音</button>
       <button @click="stopRecording">停止录音</button>
       <div v-if="isRecording" style="margin-top: 10px; color: green;">录音中...</div>
@@ -88,7 +88,70 @@ const SpeechCollection = {
   },
 };
 const WaveformDisplay = {
-  template: '<div>语音波形显示实验 - 功能待实现</div>',
+  template: `
+    <div style="padding: 20px;">
+      <h3>语音波形显示实验</h3>
+      <input type="file" accept="audio/*" @change="handleFileUpload" />
+      <div v-if="audioUrl" style="margin-top: 20px;">
+        <audio controls :src="audioUrl"></audio>
+        <canvas ref="waveformCanvas" width="600" height="200" style="margin-top: 20px; border: 1px solid #ccc;"></canvas>
+      </div>
+    </div>
+  `,
+  setup() {
+    const audioUrl = ref(null);
+    const waveformCanvas = ref(null);
+
+    const handleFileUpload = (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      audioUrl.value = URL.createObjectURL(file);
+      drawWaveform(file);
+    };
+
+    const drawWaveform = (file) => {
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const reader = new FileReader();
+
+      reader.onload = (e) => {
+        const arrayBuffer = e.target.result;
+        audioContext.decodeAudioData(arrayBuffer).then((audioBuffer) => {
+          const canvas = waveformCanvas.value;
+          const ctx = canvas.getContext('2d');
+          const data = audioBuffer.getChannelData(0);
+          const step = Math.ceil(data.length / canvas.width);
+          const amp = canvas.height / 2;
+
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.beginPath();
+
+          for (let i = 0; i < canvas.width; i++) {
+            const min = 1.0;
+            const max = -1.0;
+            for (let j = 0; j < step; j++) {
+              const datum = data[(i * step) + j];
+              if (datum < min) min = datum;
+              if (datum > max) max = datum;
+            }
+            ctx.moveTo(i, amp * (1 + min));
+            ctx.lineTo(i, amp * (1 + max));
+          }
+
+          ctx.strokeStyle = '#4CAF50';
+          ctx.stroke();
+        });
+      };
+
+      reader.readAsArrayBuffer(file);
+    };
+
+    return {
+      audioUrl,
+      waveformCanvas,
+      handleFileUpload,
+    };
+  },
 };
 const SpeechEncoding = {
   template: '<div>语音编码实验 - 功能待实现</div>',
@@ -181,6 +244,7 @@ export default {
 
     // 当前选中的实验
     const activeExperiment = ref('speech-collection');
+    console.log('初始 activeExperiment:', activeExperiment.value); // 调试日志
 
     // 处理实验选择
     const handleExperimentSelect = (index) => {
