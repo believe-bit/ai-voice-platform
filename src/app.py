@@ -68,13 +68,13 @@ from recognition_seq2seq import get_available_models, load_local_model, start_ws
 def index():
     return render_template('index.html')
 
-# API：列出语音识别模型
+# API：列出语音识别模型（替换为 app1.py 逻辑）
 @app.route('/models', methods=['GET'])
 def get_models():
     models = get_available_models()
     return jsonify(models)
 
-# API：加载语音识别模型
+# API：加载语音识别模型（替换为 app1.py 逻辑）
 @app.route('/load_model', methods=['POST'])
 def load_model():
     data = request.get_json()
@@ -91,11 +91,13 @@ def list_models():
     try:
         if section == 'asr':
             model_dir = MODEL_ROOT
-        elif section == 'asr-finetune':
+        elif section == 'asr-train' or section == 'asr-finetune':
             model_dir = TRAIN_MODEL_ROOT
         elif section == 'tts':
             model_dir = TTS_MODEL_ROOT
-        elif section == 'vits':
+        elif section == 'voice':
+            model_dir = TTS_VOICE_MODEL_ROOT
+        elif section == 'vits' or section == 'vits-save':
             model_dir = SAVE_TTS_TRAIN_ROOT
         else:
             return jsonify({'error': '无效的 section 参数'}), 400
@@ -191,6 +193,128 @@ def upload_dataset():
         shutil.rmtree(dataset_path, ignore_errors=True)
         return jsonify({"error": f"解压 ZIP 文件失败：{str(e)}"}), 500
 
+# API：上传模型文件
+@app.route('/upload_model_file', methods=['POST'])
+def upload_model_file():
+    section = request.args.get('section')
+    model_name = request.args.get('model_name')
+    if not section or not model_name:
+        return jsonify({'error': '缺少 section 或 model_name 参数'}), 400
+
+    if 'file' not in request.files:
+        return jsonify({'error': '未提供文件'}), 400
+
+    file = request.files['file']
+    if not file.filename.endswith('.zip'):
+        return jsonify({'error': '文件必须是 ZIP 压缩包'}), 400
+
+    try:
+        # 根据 section 确定目标目录
+        if section == 'asr':
+            target_dir = MODEL_ROOT
+        elif section == 'asr-train' or section == 'asr-finetune':
+            target_dir = TRAIN_MODEL_ROOT
+        elif section == 'tts':
+            target_dir = TTS_MODEL_ROOT
+        elif section == 'voice':
+            target_dir = TTS_VOICE_MODEL_ROOT
+        elif section == 'vits' or section == 'vits-save':
+            target_dir = SAVE_TTS_TRAIN_ROOT
+        else:
+            return jsonify({'error': '无效的 section 参数'}), 400
+
+        # 创建模型目录
+        model_dir = os.path.join(target_dir, model_name)
+        os.makedirs(model_dir, exist_ok=True)
+
+        # 保存 ZIP 文件
+        zip_path = os.path.join(model_dir, file.filename)
+        file.save(zip_path)
+
+        # 解压 ZIP 文件
+        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+            zip_ref.extractall(model_dir)
+        os.remove(zip_path)  # 解压后删除 ZIP 文件
+
+        return jsonify({'status': 'success', 'message': '模型上传成功'})
+    except Exception as e:
+        return jsonify({'error': f'上传模型失败: {str(e)}'}), 500
+
+# API：删除模型文件
+@app.route('/delete_model_file', methods=['POST'])
+def delete_model_file():
+    section = request.args.get('section')
+    model_name = request.args.get('model_name')
+    if not section or not model_name:
+        return jsonify({'error': '缺少 section 或 model_name 参数'}), 400
+
+    try:
+        # 根据 section 确定目标目录
+        if section == 'asr':
+            target_dir = MODEL_ROOT
+        elif section == 'asr-train' or section == 'asr-finetune':
+            target_dir = TRAIN_MODEL_ROOT
+        elif section == 'tts':
+            target_dir = TTS_MODEL_ROOT
+        elif section == 'voice':
+            target_dir = TTS_VOICE_MODEL_ROOT
+        elif section == 'vits' or section == 'vits-save':
+            target_dir = SAVE_TTS_TRAIN_ROOT
+        else:
+            return jsonify({'error': '无效的 section 参数'}), 400
+
+        # 构建模型目录路径
+        model_dir = os.path.join(target_dir, model_name)
+        if not os.path.exists(model_dir):
+            return jsonify({'error': '模型目录不存在'}), 404
+
+        # 删除模型目录
+        shutil.rmtree(model_dir)
+        return jsonify({'status': 'success', 'message': '模型删除成功'})
+    except Exception as e:
+        return jsonify({'error': f'删除模型失败: {str(e)}'}), 500
+    if not section or not model_name:
+        return jsonify({'error': '缺少 section 或 model_name 参数'}), 400
+
+    if 'file' not in request.files:
+        return jsonify({'error': '未提供文件'}), 400
+
+    file = request.files['file']
+    if not file.filename.endswith('.zip'):
+        return jsonify({'error': '文件必须是 ZIP 压缩包'}), 400
+
+    try:
+        # 根据 section 确定目标目录
+        if section == 'asr':
+            target_dir = MODEL_ROOT
+        elif section == 'asr-train' or section == 'asr-finetune':
+            target_dir = TRAIN_MODEL_ROOT
+        elif section == 'tts':
+            target_dir = TTS_MODEL_ROOT
+        elif section == 'voice':
+            target_dir = TTS_VOICE_MODEL_ROOT
+        elif section == 'vits' or section == 'vits-save':
+            target_dir = SAVE_TTS_TRAIN_ROOT
+        else:
+            return jsonify({'error': '无效的 section 参数'}), 400
+
+        # 创建模型目录
+        model_dir = os.path.join(target_dir, model_name)
+        os.makedirs(model_dir, exist_ok=True)
+
+        # 保存 ZIP 文件
+        zip_path = os.path.join(model_dir, file.filename)
+        file.save(zip_path)
+
+        # 解压 ZIP 文件
+        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+            zip_ref.extractall(model_dir)
+        os.remove(zip_path)  # 解压后删除 ZIP 文件
+
+        return jsonify({'status': 'success', 'message': '模型上传成功'})
+    except Exception as e:
+        return jsonify({'error': f'上传模型失败: {str(e)}'}), 500
+
 # API：获取生成的音频
 @app.route('/audio/<filename>')
 def serve_audio(filename):
@@ -226,34 +350,34 @@ def upload_voice_clone_audio():
 
     return jsonify({'status': 'success', 'file_path': file_path})
 
-    # # 生成唯一输出文件名
-    # output_filename = f"clone_{int(time.time())}.wav"
-    # output_path = os.path.join(SAVE_AUDIO_ROOT, output_filename)
+    # 生成唯一输出文件名
+    output_filename = f"clone_{int(time.time())}.wav"
+    output_path = os.path.join(SAVE_AUDIO_ROOT, output_filename)
 
-    # # 调用 voice.py 执行克隆
-    # conda_env_name = "asr_infer_env"
-    # conda_activate = "/home/believe/anaconda3/bin/activate"
-    # cmd = (
-    #     f'. "{conda_activate}" {conda_env_name} && '
-    #     f'python voice.py "{model}" "{audio_path}" "{text}" "{lang_tip}" "{output_path}"'
-    # )
+    # 调用 voice.py 执行克隆
+    conda_env_name = "asr_infer_env"
+    conda_activate = "/home/believe/anaconda3/bin/activate"
+    cmd = (
+        f'. "{conda_activate}" {conda_env_name} && '
+        f'python voice.py "{model}" "{audio_path}" "{text}" "{lang_tip}" "{output_path}"'
+    )
 
-    # with process_lock:
-    #     if tts_process and tts_process.poll() is None:
-    #         emit('voice_clone_result', {'error': '已有克隆任务在进行中'})
-    #         return
+    with process_lock:
+        if tts_process and tts_process.poll() is None:
+            emit('voice_clone_result', {'error': '已有克隆任务在进行中'})
+            return
 
-    #     try:
-    #         tts_process = subprocess.Popen(
-    #             ["/bin/bash", "-c", cmd],
-    #             stdout=subprocess.PIPE,
-    #             stderr=subprocess.PIPE,
-    #             text=True,
-    #             encoding='utf-8'
-    #         )
-    #         emit('voice_clone_result', {'text': '克隆任务已启动'})
-    #     except Exception as e:
-    #         emit('voice_clone_result', {'error': f'启动克隆失败: {str(e)}'})
+        try:
+            tts_process = subprocess.Popen(
+                ["/bin/bash", "-c", cmd],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                encoding='utf-8'
+            )
+            emit('voice_clone_result', {'text': '克隆任务已启动'})
+        except Exception as e:
+            emit('voice_clone_result', {'error': f'启动克隆失败: {str(e)}'})
 
 # API：VITS模型训练
 @app.route('/vits_train', methods=['POST'])

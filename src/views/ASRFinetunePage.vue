@@ -91,13 +91,18 @@ let eventSource = null;
 const fetchModels = async () => {
   try {
     const response = await listModels('asr-finetune');
-    models.value = response.data;
-    if (models.value.length > 0) {
-      selectedModel.value = models.value[0];
+    if (response && response.data) {
+      models.value = response.data;
+      if (models.value.length > 0) {
+        selectedModel.value = models.value[0];
+      }
+    } else {
+      console.error('获取模型列表失败: 返回数据格式不正确');
+      ElMessage.error('获取模型列表失败: 返回数据格式不正确');
     }
   } catch (error) {
     console.error('获取模型列表失败:', error);
-    ElMessage.error('获取模型列表失败');
+    ElMessage.error(`获取模型列表失败: ${error.message || '未知错误'}`);
   }
 };
 

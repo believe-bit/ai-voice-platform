@@ -2,7 +2,7 @@
 <template>
   <div class="model-management">
     <h2>模型管理</h2>
-    <el-tabs v-model="activeTab" type="card">
+    <el-tabs v-model="activeTab" type="card" :animated="false">
       <el-tab-pane lazy label="ASR模型" name="asr" key="asr">
         <ModelList section="asr" />
       </el-tab-pane>
@@ -49,6 +49,7 @@ watch(activeTab, (newTab) => {
   min-height: 400px;
   width: 100%;
   box-sizing: border-box;
+  transition: none !important; /* 禁用动画 */
 }
 :deep(.el-tab-pane) {
   width: 100%;

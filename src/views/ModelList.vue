@@ -1,6 +1,6 @@
 <!-- src/components/ModelList.vue -->
 <template>
-  <div>
+  <div class="model-list-container">
     <el-row :gutter="20">
       <el-col :span="24">
         <el-input v-model="newModelName" placeholder="新模型名称" style="width: 200px; margin-right: 10px;" />
@@ -16,7 +16,12 @@
     </el-row>
     <div style="margin-top: 20px;">
       <div v-show="!loading && isMounted">
-        <el-table v-if="models.length > 0" :data="models" style="width: 100%;">
+        <el-table
+          v-if="models.length > 0"
+          :data="models"
+          style="width: 100%;"
+          :key="tableKey"
+        >
           <el-table-column prop="name" label="模型名称" />
           <el-table-column label="操作">
             <template #default="scope">
@@ -46,7 +51,8 @@ const props = defineProps({
 const models = ref([]);
 const newModelName = ref('');
 const loading = ref(false);
-const isMounted = ref(false); // 新增状态控制渲染
+const isMounted = ref(false);
+const tableKey = ref(0); // 新增key强制重新渲染
 
 const sectionLabel = computed(() => {
   const labels = {
@@ -74,6 +80,8 @@ const fetchModelList = async () => {
     ElMessage.warning(`无法加载 ${sectionLabel.value} 模型，请检查后端服务或目录权限`);
   } finally {
     loading.value = false;
+    // 强制更新tableKey，确保el-table重新渲染
+    tableKey.value += 1;
   }
 };
 
@@ -108,16 +116,21 @@ const debouncedFetchModelList = debounce(fetchModelList, 500);
 
 onMounted(() => {
   debouncedFetchModelList();
-  // 延迟渲染 el-table，确保父容器尺寸稳定
+  // 延长延迟时间，确保父容器尺寸稳定
   nextTick(() => {
     setTimeout(() => {
       isMounted.value = true;
-    }, 100);
+    }, 300); // 从100ms增加到300ms
   });
 });
 </script>
 
 <style scoped>
+.model-list-container {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px;
+}
 .el-row {
   margin-bottom: 20px;
 }
@@ -125,5 +138,6 @@ onMounted(() => {
   width: 100%;
   max-height: 500px;
   overflow: auto;
+  box-sizing: border-box;
 }
 </style>
