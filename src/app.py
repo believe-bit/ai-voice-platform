@@ -68,13 +68,13 @@ from recognition_seq2seq import get_available_models, load_local_model, start_ws
 def index():
     return render_template('index.html')
 
-# API：列出语音识别模型（替换为 app1.py 逻辑）
+# API：列出语音识别模型
 @app.route('/models', methods=['GET'])
 def get_models():
     models = get_available_models()
     return jsonify(models)
 
-# API：加载语音识别模型（替换为 app1.py 逻辑）
+# API：加载语音识别模型
 @app.route('/load_model', methods=['POST'])
 def load_model():
     data = request.get_json()
@@ -226,34 +226,34 @@ def upload_voice_clone_audio():
 
     return jsonify({'status': 'success', 'file_path': file_path})
 
-    # 生成唯一输出文件名
-    output_filename = f"clone_{int(time.time())}.wav"
-    output_path = os.path.join(SAVE_AUDIO_ROOT, output_filename)
+    # # 生成唯一输出文件名
+    # output_filename = f"clone_{int(time.time())}.wav"
+    # output_path = os.path.join(SAVE_AUDIO_ROOT, output_filename)
 
-    # 调用 voice.py 执行克隆
-    conda_env_name = "asr_infer_env"
-    conda_activate = "/home/believe/anaconda3/bin/activate"
-    cmd = (
-        f'. "{conda_activate}" {conda_env_name} && '
-        f'python voice.py "{model}" "{audio_path}" "{text}" "{lang_tip}" "{output_path}"'
-    )
+    # # 调用 voice.py 执行克隆
+    # conda_env_name = "asr_infer_env"
+    # conda_activate = "/home/believe/anaconda3/bin/activate"
+    # cmd = (
+    #     f'. "{conda_activate}" {conda_env_name} && '
+    #     f'python voice.py "{model}" "{audio_path}" "{text}" "{lang_tip}" "{output_path}"'
+    # )
 
-    with process_lock:
-        if tts_process and tts_process.poll() is None:
-            emit('voice_clone_result', {'error': '已有克隆任务在进行中'})
-            return
+    # with process_lock:
+    #     if tts_process and tts_process.poll() is None:
+    #         emit('voice_clone_result', {'error': '已有克隆任务在进行中'})
+    #         return
 
-        try:
-            tts_process = subprocess.Popen(
-                ["/bin/bash", "-c", cmd],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-                encoding='utf-8'
-            )
-            emit('voice_clone_result', {'text': '克隆任务已启动'})
-        except Exception as e:
-            emit('voice_clone_result', {'error': f'启动克隆失败: {str(e)}'})
+    #     try:
+    #         tts_process = subprocess.Popen(
+    #             ["/bin/bash", "-c", cmd],
+    #             stdout=subprocess.PIPE,
+    #             stderr=subprocess.PIPE,
+    #             text=True,
+    #             encoding='utf-8'
+    #         )
+    #         emit('voice_clone_result', {'text': '克隆任务已启动'})
+    #     except Exception as e:
+    #         emit('voice_clone_result', {'error': f'启动克隆失败: {str(e)}'})
 
 # API：VITS模型训练
 @app.route('/vits_train', methods=['POST'])

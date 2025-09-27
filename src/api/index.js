@@ -25,3 +25,9 @@ export const stopVitsTrain = () => axios.post(`${API_BASE_URL}/vits_stop_train`)
 export const vitsTest = (data) => axios.post(`${API_BASE_URL}/vits_test`, data);
 export const getVitsTrainLog = () => `${API_BASE_URL}/vits_train_log`;
 export const getVitsTestLog = () => `${API_BASE_URL}/vits_test_log`;
+
+export const listModelFiles = (section) => axios.get(`${API_BASE_URL}/list_models?section=${section}`);
+export const uploadModelFile = (section, modelName, formData) => axios.post(`${API_BASE_URL}/upload_model_file?section=${section}&model_name=${modelName}`, formData, {
+  headers: { 'Content-Type': 'multipart/form-data' }
+});
+export const deleteModelFile = (section, modelName) => axios.post(`${API_BASE_URL}/delete_model_file?section=${section}&model_name=${modelName}`);

@@ -11,3 +11,10 @@ app.use(router);
 app.use(ElementPlus);
 app.config.globalProperties.$socket = io('http://localhost:5000'); // 替换为你的后端 WebSocket URL
 app.mount('#app');
+
+window.addEventListener('error', (event) => {
+  if (event.message.includes('ResizeObserver loop completed with undelivered notifications')) {
+    event.preventDefault();
+    console.warn('已忽略 ResizeObserver 错误');
+  }
+});
